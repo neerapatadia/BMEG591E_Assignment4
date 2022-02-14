@@ -98,7 +98,7 @@ bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -U /projects/bmeg/A4/S
 
 
 #?# Perform a single-end alignment using bowtie2 against the pre-made index of the hg19 genome build - 2 pt
-bowtie2 -x /projects/bmeg/indexes/hg19_bowtie2_index -U /projects/bmeg/A4/SRR12506919_subset.fastq.gz -S /home/npatadia_bmeg22/assignment4_bmeg591e/SRR12506919_subset_aligned_hg19.sam
+bowtie2 -x /projects/bmeg/indexes/hg19/hg19_bowtie2_index -U /projects/bmeg/A4/SRR12506919_subset.fastq.gz -S /home/npatadia_bmeg22/assignment4_bmeg591e/SRR12506919_subset_aligned_hg19.sam
 ```
 
 ### b. Making the files comparable
@@ -136,8 +136,13 @@ samtools view -S -b -h SRR12506919_subset_aligned_hg38.sam > SRR12506919_subset_
 
 ## Bam to bed -------------
 ## Tip: Look into the bedtools bamtobed command
-#?# Use bedtools to convert the hg19 alignment bam file to bed format, type the command you used below - 1 pt 
+#?# Use bedtools to convert the hg19 alignment bam file to bed format, type the command you used below - 1 pt
+bedtools bamtobed -i SRR12506919_subset_aligned_hg19.bam > SRR12506919_subset_aligned_hg19.bed
+
 #?# Use bedtools to convert the hg38 alignment bam file to bed format, type the command you used below - 1 pt 
+bedtools bamtobed -i SRR12506919_subset_aligned_hg38.bam > SRR12506919_subset_aligned_hg38.bed
+
+
 ## LiftOver --------------
 #?# Use liftOver to change the hg19 alignment bed file to the hg38 coordinate system, type the command/s you used below - 2 pt
 ## To do this, you will need the "chain file": /projects/bmeg/A4/hg19ToHg38.over.chain.gz
