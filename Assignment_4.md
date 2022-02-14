@@ -445,16 +445,23 @@ command doing and if it would change your data.
 
 ``` bash
 #?# Re-run the SE alignment that you performed on 1a against the hg38 genome build, change the output name and add this parameter:* --non-deterministic --seed 3 * - 1 pt
-
+bowtie2 --non-deterministic --seed 3 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -U /projects/bmeg/A4/SRR12506919_subset.fastq.gz -S /home/npatadia_bmeg22/assignment4_bmeg591e/SRR12506919_subset_aligned_hg38_part2c.sam
 
 ## Change both sam outputs to bam. Remember to remove the sam files right after it's done!
 #?# Type the commands you used to convert the file below  - 0.5 pt
+samtools view -S -b -h SRR12506919_subset_aligned_hg38_part2c.sam > SRR12506919_subset_aligned_hg38_part2c.bam
  
 #?# Change the bam file to bed, using the betdools bedtobam function, type the command you used for the file below  - 0.5 pt
+bedtools bamtobed -i SRR12506919_subset_aligned_hg38_part2c.bam > SRR12506919_subset_aligned_hg38_part2c.bed
+
 #?# Sort the files by read name (same as you did on part 1, using column 4), type the command you used below - 1 pt
+sort -k4 SRR12506919_subset_aligned_hg38_part2c.bed > SRR12506919_subset_aligned_hg38_sorted_part2c.bed
+
 #?# Merge the "non deterministic" bed file and the "original" hg38 alignment bed (part 1c) using the join command, as in part 1c, this time follow this format: - 1 pt
 ## read_id  chr_ori  start_ori  end_ori  strand_ori chr_nonDet  start_nonDet  end_nonDet  strand_nonDet 
 ## NOTE: Remember to save the output!
+join -j4 -o 1.4,1.1,1.2,1.3,1.6,2.1,2.2,2.3,2.6 SRR12506919_subset_aligned_hg38_sorted.bed SRR12506919_subset_aligned_hg38_sorted_part2c.bed > join_hg38_org_noDet.bed
+
 ## Copy the merged bed file to your local computer for analysis
 ```
 
@@ -463,6 +470,8 @@ command doing and if it would change your data.
 ``` r
 #?# Load your merged bed file onto R using the *read.csv* function and save it into a data.frame
 #?# Type the command you used below  - 1 pt
+
+
 ## Change the column names of your merged bed data.frame to: 
 ## read_id  chr_ori  start_ori  end_ori  strand_ori chr_nonDet  start_nonDet  end_nonDet  strand_nonDet 
 #?# Type the command you used below:
@@ -491,8 +500,4 @@ with the authors and their contributions to the assignment. If you
 worked alone, only the author (e.g. your name and student ID) should be
 included.
 
-Authors: Name1 (studentID1) and Name2 (studentID2)
-
-Contributions: (example) N1 and N2 worked together on the same computer
-to complete the assignment. N1 typed for the first half and N2 typed for
-the second half.
+Authors: Neera Patadia (79557773)
