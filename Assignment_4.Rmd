@@ -138,7 +138,7 @@ Before you get started, you discover that a labmate of yours was comparing the n
 #?# Using the join command on bash, merge the two bed files, so they follow the following format: 
 ## read_id  chr_hg38  start_hg38  end_hg38  strand_hg38 chr_hg19  start_hg19  end_hg19  strand_hg19 
 #?# Type the command you used to merge the files below - 2pt 
-join -j4 SRR12506919_subset_aligned_hg38_sorted.bed hg19_to_hg38_lift_sorted.bed > join_hg19_hg38.bed
+join -j4 -o 1.4,1.1,1.2,1.3,1.6,2.1,2.2,2.3,2.6 SRR12506919_subset_aligned_hg38_sorted.bed hg19_to_hg38_lift_sorted.bed > join_hg19_hg38_test.bed
 
 #?# Use the head command to view the first 3 rows of your merged file, copy the output below: - 2pt 
 head -n3 join_hg19_hg38.bed
@@ -161,57 +161,86 @@ Now that you have the files in the right order, you move your files to your loca
 # cols2compare=c(2,6): default is column 2 versus 6, which if you followed the format specified when you merged the files, they should correspond to the chromosome column of each read for the two conditions (e.g., hg38 and hg19)
 # type.a=c("hg38", "redo"): you should specify a string, that states what is condition A. Defaults are "hg38" and "redo"
 # type.b=c("hg19", "noDet"): you should specify a string, that states what is condition B. Defaults are "hg19" and "noDet"
+
+
 reads.per.chr <- function(merged_bed, cols2compare=c(2,6), type.a=c("hg38", "redo"), type.b=c("hg19", "noDet")){
   
   ## Create canonical chromosomes array to filter out contigs and scaffolds for simplicity
   canonical_chromosomes <- paste0("chr", 1:22)
   
   ## For column 1
-  chr_subset <- merged_bed[,c(cols2compare[1])]
-  table_chrs1 <- table(chr_subset)
+  chr_subset <- merged_bed[,c(cols2compare[1])] #looking at chromosome numbers from hg38 data
+  table_chrs1 <- table(chr_subset) #get the number of occurrences (frequency) of each chromosome number from hg38 data
+
   ## For column 2
-  chr_subset <- merged_bed[,c(cols2compare[2])]
-  table_chrs2 <- table(chr_subset)
+  chr_subset <- merged_bed[,c(cols2compare[2])] #looking at chromosome numbers from lifted hg19 data
+  table_chrs2 <- table(chr_subset) #get the number of occurrences (frequency) of each chromosome number from lifted hg19 data
   
   
+  #get number of occurrences of each chromosome for hg19 and hg38, only for the 22 chromosomes and without scaffolds and contigs
+  #combine these occurrences for hg19 and hg38 into a single dataframe.
   compare.df <- data.frame(column1=table_chrs1[names(table_chrs1) %in% canonical_chromosomes],
                            column2=table_chrs2[names(table_chrs2) %in% canonical_chromosomes])
+ 
   
-  compare.df <- compare.df[,c(1,2,4)]
-  colnames(compare.df) <- c("Chr",paste0(type.a, "_reads"), paste0(type.b, "_reads"))
+  compare.df <- compare.df[,c(1,2,4)] #remove the repeated chromosome number column
   
-  compare.df <- melt(compare.df)
+  colnames(compare.df) <- c("Chr",paste0(type.a, "_reads"), paste0(type.b, "_reads")) #modifying column names in compare.df
+
+  compare.df <- melt(compare.df) #collapsing compare.df so the ref genome versions are annotated in single column, as opposed to being in two separate columns.
+  
   
   return(compare.df)
   
 }
+
 ```
 
 
 
 ```{r, eval=TRUE}
 #?# Copy the files from the server to your local computer - 1pt
+
+#scp npatadia_bmeg22@orca1.bcgsc.ca:/home/npatadia_bmeg22/assignment4_bmeg591e/join_hg19_hg38.bed /Users/neera/Documents/BMEG_591e/BMEG591E_Assignment4
+
 #?# Load your merged bed file into R suing the *read.csv* function and save it into a data.frame
 #?# Type the command you used below  - 1pt
+data.df <- read.csv("join_hg19_hg38.bed", sep = "")
+
 ## Change the column names of your merged bed data.frame to: 
 # read_id  chr_hg38  start_hg38  end_hg38  strand_hg38 chr_hg19  start_hg19  end_hg19  strand_hg19 
 #?# Type the command you used below:
+colnames(data.df) <-c("read_id","chr_hg38","start_hg38","end_hg38","strand_hg38","chr_hg19","start_hg19", "end_hg19","strand_hg19")
+
 ## Load the reshape2 library, install it if you don't already have it! 
 ## Tip: Use the "packages" tab on the left bottom screen 
 library(reshape2)
+
 #?# Run the reads.per.chr on your genome builds merged bed (previously loaded), specify all the parameters following the instructions of the function, type the command used below: - 1.5 pt 
+compare.df <- reads.per.chr(data.df, c(2,6), "hg38","hg19")
+
 #?# How many reads were mapped to two different chromosomes? What percent of reads is this? Type the code and the answers for each below. 2 pt
+total_reads = nrow(data.df) #get total number of reads
+chr_mismatch_reads = nrow(data.df[data.df$chr_hg38 != data.df$chr_hg19,])#get number of reads mapping to different chromosomes
+#there are 29413 mismatched reads between chr_hg38 and chr_hg19
+mismatch_percentage = (chr_mismatch_reads/total_reads)*100
+#approximately 4.865% of all reads are mismatched between the two reference coordinate systems.
+
 ## Using the output data.frame you got from running the reads.per.chr function on your merged bed, create a barplot that: 
 ## Uses the Chr column for the x-axis
 ## Useds the value (number of reads) column for the y-axis
 ## Uses the variable (conditions, also known as different genome builds in this case) column to "fill in" the color 
 ## Each build should have their own bar (next to each other), they shouldn't be stacked!!
 #?# Type the command you used below: - 1.5 pt
+library(ggplot2)
+ggplot(compare.df, aes(x = Chr, y=value, fill = variable )) + geom_bar(stat = "identity", position="dodge") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
 ```
 
 Which chromosome has the biggest difference between reads? Which genome build had more reads for this chromosome? Answer below - 1 pt
 
-
+#### Answer
+Based on the above figure, chromosome 21 appears to have the largest difference in the number of reads between hg38 and hg19. For this chromosome, the hg38 build has more reads in comparison to its hg19 counterpart.
 
 ### d. Reads position in the genome builds
 
@@ -222,6 +251,12 @@ Which chromosome has the biggest difference between reads? Which genome build ha
 ## Plots each chromosome in its own subplot (panel) (e.g. see facet_wrap())
 ## Plots only cases where both reads mapped to the same chromosome
 #?# Type the command you used below: - 3 pt
+
+#first need to get dataframe of reads where reads map to same chr between the two reference genomes
+data.df.matched <- data.df[data.df$chr_hg38 == data.df$chr_hg19,]
+
+ggplot(data = data.df.matched, mapping = aes(x = start_hg38, y=start_hg19, group = chr_hg38)) + geom_point() + facet_wrap(~ chr_hg38)
+
 ```
 
 
@@ -235,13 +270,23 @@ You are glad that you have answered most of your burning questions about read ma
 ```{bash, eval=FALSE}
 #?# Re-run the SE alignment that you performed on 1a against the hg38 genome build, use exactly the same parameters, just change the output name  - 0.5 pt
 ## Change both sam output to bam. Remember to remove the sam files right after it's done!
+bowtie2 -x /projects/bmeg/indexes/hg38/hg38_bowtie2_index -U /projects/bmeg/A4/SRR12506919_subset.fastq.gz -S /home/npatadia_bmeg22/assignment4_bmeg591e/SRR12506919_subset_aligned_hg38_part2.sam
+
 #?# Type the commands you used to convert the file below  - 0.5 pt
+samtools view -S -b -h SRR12506919_subset_aligned_hg38_part2.sam > SRR12506919_subset_aligned_hg38_part2.bam
+
 #?# Change the bam file to bed, using the betdools bedtobam function, type the command you used for the file below - 0.5 pt
+bedtools bamtobed -i SRR12506919_subset_aligned_hg38_part2.bam > SRR12506919_subset_aligned_hg38_part2.bed
+
 #?# Sort the file by read name (same as you did on part 1, using column 4), type the command you used below - 1 pt
+sort -k4 SRR12506919_subset_aligned_hg38_part2.bed > SRR12506919_subset_aligned_hg38_sorted_part2.bed
+
 ## Because what you really want to see is if and what changed between these bowtie2 runs compared to your first run on Part 1b, you decide to merge each new run file with the original:
 #?# Merge the "redo" bed file and the "original" hg38 alignment bed (from part 1c) using the join command, as in part 1c, this time follow this format: 1 pt
 ## read_id chr_ori  start_ori  end_ori  strand_ori chr_redo  start_redo  end_redo  strand_redo
 ## NOTE: Remember to save the output!
+join -j4 -o 1.4,1.1,1.2,1.3,1.6,2.1,2.2,2.3,2.6 SRR12506919_subset_aligned_hg38_sorted.bed SRR12506919_subset_aligned_hg38_sorted_part2.bed > join_hg38_org_redo.bed
+
 ## Copy the merged bed file to your local computer for analysis
 ```
 
@@ -254,18 +299,33 @@ Your last analysis on the differences between genome build turn out so well, tha
 ```{r, eval=TRUE}
 #?# Load your merged bed file into R using the *read.csv* function and save it into a data.frame
 #?# Type the command you used below  - 1pt
+data2.df <- read.csv("join_hg38_org_redo.bed", sep = "")
+
 ## Change the column names of your merged bed data.frame to: 
 ## read_id chr_ori  start_ori  end_ori  strand_ori chr_redo  start_redo  end_redo  strand_redo
 #?# Type the command you used below:
+colnames(data2.df) <-c("read_id","chr_ori","start_ori","end_ori","strand_ori","chr_redo","start_redo", "end_redo","strand_redo")
+
 #?# Run the reads.per.chr on your genome builds merged bed (previously loaded), specify all the parameters following the instructions of the function, type the command used below: - 1.5 pt 
+compare.df.ori.redo<- reads.per.chr(data2.df, c(2,6), "hg38_org","hg38_redo")
+
 #?# How many reads were mapped to two different chromosomes? What percent of reads is this? Type the code and the answers for each below. 2 pt
+total_reads = nrow(data2.df) #get total number of reads
+chr_mismatch_reads = nrow(data2.df[data2.df$chr_ori != data2.df$chr_redo,])#get number of reads mapping to different chromosomes
+#there are 29413 mismatched reads between chr_hg38 and chr_hg19
+mismatch_percentage = (chr_mismatch_reads/total_reads)*100
+#0% of all reads are mismatched between the original and the redo for hg_38
+
 ## Using the output data.frame you got from running the reads.per.chr function on your merged bed, do a barplot that: 
 ## Uses the Chr column for the x-axis
 ## Useds the value (number of reads) column for the y-axis
 ## Uses the variable (conditions, also known as different runs in this case) column to "fill in" the color 
 ## Each condition must have their own bar, they shouldn't be stacked!!
 #?# Type the command you used below: - 1.5 pt
+ggplot(compare.df.ori.redo, aes(x = Chr, y=value, fill = variable )) + geom_bar(stat = "identity", position="dodge") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
 #?# Do you see differences among the number of reads per chromosome between the two runs? Answer yes or no - 0.5 pt
+#no
 ```
 
 You are intrigued by the results of your graph and decide to go deeper into the alignment to get a better idea of where the reads mapped within the genome. 
@@ -273,12 +333,20 @@ You are intrigued by the results of your graph and decide to go deeper into the 
 ```{r, eval=TRUE}
 ## Subtract the start position of the original bed from the start position of the redo for all the reads
 #?# Type the command used below: - 0.5 pt
+data2.df$start_pos_diff <- data2.df$start_ori - data2.df$start_redo
+
 ## Use the *table* command to tabulate the results from the previous question. Ex. table(a-b)
 #?# Type the command you used below: - 0.5 pt
+pos_diff <- table(data2.df$start_pos_diff)
+
 #?# What do you see? How many have a non zero difference in position start? - 0.5 pt
+#none of them have a non-zero difference in start position.
+
 #?# Describe how would you expect a scatterplot comparing the start ends in both runs would look like - 0.5 pt
 ## x-axis: original run
 ## y-axis: re-run 
+#it would just be a linear line because x = y because all the positions between the two are the same.
+
 ```
 
 
@@ -291,6 +359,8 @@ You are confused by your friend's results, you don't seem to have the same probl
 
 ```{bash, eval=FALSE}
 #?# Re-run the SE alignment that you performed on 1a against the hg38 genome build, change the output name and add this parameter:* --non-deterministic --seed 3 * - 1 pt
+
+
 ## Change both sam outputs to bam. Remember to remove the sam files right after it's done!
 #?# Type the commands you used to convert the file below  - 0.5 pt
  
