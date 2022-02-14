@@ -147,6 +147,8 @@ bedtools bamtobed -i SRR12506919_subset_aligned_hg38.bam > SRR12506919_subset_al
 #?# Use liftOver to change the hg19 alignment bed file to the hg38 coordinate system, type the command/s you used below - 2 pt
 ## To do this, you will need the "chain file": /projects/bmeg/A4/hg19ToHg38.over.chain.gz
 ## Tip: Look at the liftOver documentation! 
+
+liftOver SRR12506919_subset_aligned_hg19.bed /projects/bmeg/A4/hg19ToHg38.over.chain.gz hg19_to_hg38_lift.bed unlifted.bed
 ```
 
 ### c. Analyzing the differences
@@ -161,8 +163,11 @@ in each file correspond to the same original read.
 ``` bash
 #?# Using bash commands to sort the transformed hg19 alignment file bed alignment file by read name (column 4), type the command you used below - 2 pt
 ## Tip: Look at the sort command!
+sort -k4 hg19_to_hg38_lift.bed > hg19_to_hg38_lift_sorted.bed
+
 #?# Using bash commands, sort the hg38 bed alignment file by read name (column 4), type the command you used below - 2 pt
 ## Tip: Look at the sort command!
+sort -k4 SRR12506919_subset_aligned_hg38.bed > SRR12506919_subset_aligned_hg38_sorted.bed
 ```
 
 You were really happy to see a visual representation of your data the
@@ -195,10 +200,14 @@ wants to make sure you know what you are doing).
 #?# Using the join command on bash, merge the two bed files, so they follow the following format: 
 ## read_id  chr_hg38  start_hg38  end_hg38  strand_hg38 chr_hg19  start_hg19  end_hg19  strand_hg19 
 #?# Type the command you used to merge the files below - 2pt 
+join -j4 SRR12506919_subset_aligned_hg38_sorted.bed hg19_to_hg38_lift_sorted.bed > join_hg19_hg38.bed
+
 #?# Use the head command to view the first 3 rows of your merged file, copy the output below: - 2pt 
-# 
-# 
-# 
+head -n3 join_hg19_hg38.bed
+# SRR12506919.1 chr16 1379150 1379301 42 + chr16 1379150 1379301 42 +
+# SRR12506919.10 chr1 109467028 109467179 42 + chr1 109467028 109467179 42 +
+# SRR12506919.100 chr19 3556952 3557103 42 + chr19 3556952 3557103 42 +
+
 ## Copy the merged bed file to your local computer for analysis
 ```
 
